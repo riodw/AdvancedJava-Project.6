@@ -5,6 +5,6 @@
 ```
 run:
 I am here
-The Drivr is Loaded.
+The Driver is Loaded.
 Connected successfully!
 ```
