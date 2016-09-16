@@ -1,6 +1,6 @@
 # Advanced Java
 ## Project 6 : JDBC (Java Database Connectivity)
-#### OutPut Graphical:
+#### OutPut:
 --------------------
 run:
 I am here
