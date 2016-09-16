@@ -1,0 +1,124 @@
+Project #6
+COMPSCI 221, fall 2015
+
+This project continues the previous one. If you have implemented the project for chatting successfully, just continue it. If you cannot get yours to work, use the enclosed copy.
+
+In this project, we want to combine internet programming with JDBC so that the messages of the clients and corresponding friends can be stored in a database.
+
+1.	Create appropriate tables for storing the data required in the following steps. Try your best to create multiple linked tables for avoiding redundancy of data. 
+2.	When a client is connecting to your server the first time, your server should ask the client to register with the program, collect information about the client such as user name, phone number and password and store the information in the database.
+3.	A registered client may invite an individual friend by using his/her user name or phone number to chat through your server. If the one who is invited by this client is not registered yet, your server should say so. If the one who is invited by this client has been registered with your server, your server should inform this client, ask the client whether s/he accepts the invitation and let the client know s/he needs to either send a response for accepting the invitation or reject the invitation.
+4.	Once a client accepted the invitation of another client, they become friends so their relationship is stored in your database. One of them may send message to another any time. If one of them sends a message and the other one is also online, the message is sent over right away. If one of them sends a message and the other one is not online, the message should be stored in the database and sent to the client once the client makes connection.
+5.	Again, when a registered client makes connection, all messages of her/his friends from the most recent three days are displayed right away so your database is updated frequently and only keeps the messages from the most recent three days.
+6.	A client may decide to form a chat group and give the group a name. If a group is formed, this relationship is stored in the database, all clients in this group receives a message about the formation of this group including the group name and any client in this group may use the group name to send a message to all clients in the group. 
+7.	If you can add simple GUI to this program, your program would be close to the WeChat which is so popular among Chinese.
+
+-----------------
+
+import java.net.*;
+import java.io.*;
+import java.util.*;
+
+public class ChatServer
+{
+  /**Main method listens for a client connection on port
+  * 3456. Runs continuously.
+  **/
+  public static void main(String[] args) throws Exception
+  {
+    ServerSocket server = new ServerSocket(3456);    
+    TreeMap<String, Socket> clientList = new TreeMap<String, Socket>();
+    ChatServer web = new ChatServer();
+    
+    while(true)
+    {
+      Socket client = server.accept();       
+      web.new ClientThreadIN(client,clientList);        
+              
+      System.out.println((client.getLocalPort())+" is connected");
+    }    
+  }
+
+/** The ClientThreadIN thread takes the client socket object
+    and the TreeMap of user to socket. Each thread sends and
+    reads input from its client.
+*/
+  class ClientThreadIN extends Thread
+  {
+    Socket clientIN;
+    ChatServer web;
+    TreeMap<String,Socket> clientList;
+    Scanner fromClient;
+    PrintWriter toClient;
+    
+    /*Constructor-- Sets up the input and output streams for the
+      client socket that this thread handles.
+      @param c The client Socket object.
+      @param t The TreeMap of Users and their sockets.
+    */
+    public ClientThreadIN(Socket c,TreeMap<String,Socket> t) throws Exception
+    {
+      clientIN = c;
+      clientList = t;      
+      fromClient = new Scanner(clientIN.getInputStream());
+      toClient   = new PrintWriter(clientIN.getOutputStream(), true);
+      start();
+    }
+/**Run method executes while thread is alive. The method first prompts the user for a name to use for this chat session. Then the user name and socket is put into the map. Next, the server then sends a list of the connected users as well as some instructions concerning its protocol to the client. After that initial setup, the thread listens for input from the client and directs the input to the correct client output stream by retrieving the appropriate socket from the map.
+    */
+    public void run()
+    {
+      String s = "";
+      String s2 = "";
+          
+      toClient.println("Enter user name: ");
+      s = fromClient.nextLine();
+      clientList.put(s,clientIN);
+      toClient.println("Welcome ");
+      toClient.println(s);
+      toClient.println("Connected users:");
+    
+      Set users = clientList.keySet();
+      for(Iterator i = users.iterator(); i.hasNext(); )
+         toClient.println(i.next());
+      toClient.println("Type: User_Name/Message to send message.");
+      toClient.println("Type: "+s+"/DONE  to exit.");
+      toClient.println("$");
+      
+      PrintWriter toPeer = null;
+      
+      while(true)
+      {
+        if(fromClient.hasNextLine())
+        {
+          s = fromClient.nextLine();
+          StringTokenizer message = new StringTokenizer(s,"/");
+          String to = message.nextToken();
+          Socket destination = clientList.get(to);
+          try{
+            toPeer = new PrintWriter(destination.getOutputStream(), true);
+          } catch(Exception e){toClient.println(to+" not available.");} 
+        
+          String text = message.nextToken();
+          String from = message.nextToken();
+        
+          if(text.equals("DONE"))
+          {
+            clientList.remove(to);
+            toPeer.println("Goodbye "+from);
+            toPeer.println(from+":DONE");
+            fromClient.close();
+            toClient.close();
+            try{
+              clientIN.close();
+            } catch (Exception e) {}
+          }
+          else
+          {             
+            toPeer.println(from+":"+text);
+          }          
+        }//end if   
+      }//end while
+    }//end run  
+  }//end of ClientThreadIN class
+}//end of ChatServer class
