@@ -1,5 +1,5 @@
 # Advanced Java
-## Project 6 : JDBC (Java Database Connectivity)
+## Project 6 : JDBC (Chat Client & Server - With Database Connectivity)
 #### OutPut:
 --------------------
 ```
